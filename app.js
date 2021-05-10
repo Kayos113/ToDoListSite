@@ -19,7 +19,13 @@ mongoose.connect("mongodb://localhost:27017/todoListDB", {
 }); // Connect to Mongo Database
 
 const itemsSchema = { // Create an item Schema that will be used to build items to insert into the db
-  name: String
+  name: String,
+  count: {
+    type: Number,
+    min: 1,
+    max: 3,
+    default: 1
+  }
 };
 const Item = mongoose.model("Item", itemsSchema); // Make a model in the db to hold the schema type we created
 
@@ -94,27 +100,42 @@ app.post("/delete", (req, res) => {
   const itemID = req.body.checkbox;
   const listName = req.body.listName;
 
-  setTimeout(() => {
-    if (listName === "Today") {
-      Item.deleteOne({
-        _id: itemID
-      }, (err) => {
-        if (err) {
-          console.log(err);
-        } else {
-          console.log("Successfully deleted item with id: " + itemID);
-          res.redirect("/");
-        }
-      });
+  Item.findOneAndUpdate({_id:itemID}, {$inc: {count:1}}, (err, foundItem) => {
+    let itemStage = foundItem.count;
+    console.log(itemStage);
+    if(itemStage===3)  {
+      // Delete the selected item
 
+        setTimeout(() => {
+          if (listName === "Today") { //for the default Today list
+            Item.deleteOne({
+              _id: itemID
+            }, (err) => {
+              if (err) {
+                console.log(err);
+              } else {
+                console.log("Successfully deleted item with id: " + itemID);
+                res.redirect("/");
+              }
+            });
+
+          } else { // For a dynamic list
+            List.findOneAndUpdate({name: listName}, {$pull: {items: {_id: itemID}}}, (err, foundList) => {
+              if(!err) {
+                res.redirect("/"+listName);
+              }
+            });
+          }
+        }, 500);
     } else {
-      List.findOneAndUpdate({name: listName}, {$pull: {items: {_id: itemID}}}, (err, foundList) => {
-        if(!err) {
-          res.redirect("/"+listName);
-        }
-      });
+      if(listName==="Today") {
+        res.redirect("/");
+      } else {
+        res.redirect("/")+listName;
+      }
     }
-  }, 500);
+  })
+
 })
 
 app.get("/:customListName", (req, res) => {
