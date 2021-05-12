@@ -12,7 +12,8 @@ app.use(bodyParser.urlencoded({
 }));
 app.use(express.static("public"));
 
-mongoose.connect("mongodb://localhost:27017/todoListDB", {
+const uri = "mongodb+srv://admin-will:test123@cluster0.awlf2.mongodb.net/toDoListDB";
+mongoose.connect(uri, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
   useFindAndModify: false
@@ -127,7 +128,7 @@ app.post("/delete", (req, res) => {
             });
           }
         }, 500);
-    } else {
+    } else { // it is not time to delete it.
       if(listName==="Today") {
         res.redirect("/");
       } else {
